@@ -5,89 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PoketKu - Monthly Budget Planner</title>
     
-    <!-- PWA & iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="PoketKu">
-    <link rel="apple-touch-icon" href="image.PNG">
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="image.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f0fdf4">
 
-    <!-- Tailwind CSS for scaffolding & Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* Soft Pastel Palette & Custom Animations */
-:root {
-    --bg-pastel: #f7f9fc;
-    --pos-pastel: #e6f4ea;
-    --pos-text: #137333;
-    --neg-pastel: #fce8e6;
-    --neg-text: #c5221f;
-}
+        :root {
+            --bg-pastel: #f7f9fc;
+            --pos-pastel: #e6f4ea;
+            --pos-text: #137333;
+            --neg-pastel: #fce8e6;
+            --neg-text: #c5221f;
+        }
 
-/* FIX 1: Lock the viewport to prevent horizontal shifting/sliding on mobile */
-html, body {
-    max-width: 100%;
-    overflow-x: hidden;
-    position: relative;
-    height: 100%;
-}
+        /* FIX: Lock the viewport to prevent horizontal shifting/sliding on mobile */
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+            position: relative;
+            height: 100%;
+        }
 
-body {
-    background-color: var(--bg-pastel);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    transition: background-color 0.5s ease;
-    padding-top: 195px; /* Adds space so scrolling content doesn't start hidden under the floating card */
-}
+        body {
+            background-color: var(--bg-pastel);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.5s ease;
+            padding-top: 195px; /* Adds space so scrolling content doesn't start hidden under the floating card */
+        }
 
-/* FIX 2: Make the Balance card float/sticky at the top */
-#indicator-card {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 2rem); /* Matches the original layout padding margins */
-    max-width: 416px; /* Keeps it perfectly aligned with your max-w-md layout */
-    z-index: 50;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    margin-top: 1rem;
-}
+        /* FIX: Make the Balance card float/sticky at the top */
+        #indicator-card {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem); /* Matches original layout padding margins */
+            max-w: 416px; /* Keeps it perfectly aligned with max-w-md layout */
+            z-index: 50;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            margin-top: 1rem;
+        }
 
-/* Micro-interaction: Scale-up pop for buttons */
-button, .clickable {
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-button:active, .clickable:active {
-    transform: scale(0.95);
-}
+        /* Micro-interaction: Scale-up pop for buttons */
+        button, .clickable {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        button:active, .clickable:active {
+            transform: scale(0.95);
+        }
 
-/* Vibration / Impact Animation for numbers */
-@keyframes impact-pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); filter: brightness(1.1); }
-    100% { transform: scale(1); }
-}
-.animate-impact {
-    animation: impact-pop 0.15s ease-out;
-}
+        /* Vibration / Impact Animation for numbers */
+        @keyframes impact-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); filter: brightness(1.1); }
+            100% { transform: scale(1); }
+        }
+        .animate-impact {
+            animation: impact-pop 0.15s ease-out;
+        }
 
-/* Tab Transition */
-.tab-content {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-.tab-content.active {
-    display: block;
-    opacity: 1;
-}
+        /* Tab Transition */
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto pb-24 overflow-x-hidden">
 
-    <!-- TOP HEADER INDICATOR -->
+    <div id="pull-indicator-container" class="fixed top-0 left-0 right-0 flex justify-center pointer-events-none z-40 transition-transform duration-150" style="transform: translateY(-60px);">
+        <div id="pull-circle" class="bg-red-100 border border-red-200 text-red-600 rounded-full w-12 h-12 flex items-center justify-center shadow-md transform transition-transform duration-100">
+            <span id="pull-icon" class="text-xl transition-transform duration-100">✨</span>
+        </div>
+    </div>
+
     <header id="indicator-card" class="rounded-3xl p-6 text-center shadow-sm mb-6 transition-all duration-300 var(--pos-pastel)">
         <h1 class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1">Balance / Surplus</h1>
         <div id="balance-amount" class="text-4xl font-black tracking-tight my-1 transition-colors duration-300">
@@ -95,7 +98,6 @@ button:active, .clickable:active {
         </div>
         <p class="text-xs text-gray-500 font-medium mt-1">...left to spend or save</p>
 
-        <!-- Navigation Tab Pills -->
         <div class="flex bg-white/60 backdrop-blur-md p-1 rounded-full mt-6 gap-1 text-xs font-semibold shadow-inner">
             <button onclick="switchTab('plan')" id="btn-plan" class="flex-1 py-2.5 rounded-full bg-white shadow-sm text-gray-800">Plan</button>
             <button onclick="switchTab('projection')" id="btn-projection" class="flex-1 py-2.5 rounded-full text-gray-500">12-Month Forecast</button>
@@ -103,17 +105,7 @@ button:active, .clickable:active {
         </div>
     </header>
 
-    <!-- TAB 1: BUDGET PLANNER -->
     <main id="tab-plan" class="tab-content active space-y-6">
-        <!-- Global Actions -->
-        <div class="flex justify-between items-center px-1">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Draft Baseline</span>
-            <button onclick="clearAll()" class="text-xs font-semibold text-red-400 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full flex items-center gap-1">
-                ✨ Wipe Clean
-            </button>
-        </div>
-
-        <!-- INCOME SECTION -->
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full text-sm">💰 Incomes</h2>
@@ -122,7 +114,6 @@ button:active, .clickable:active {
             <div id="income-list" class="space-y-3"></div>
         </section>
 
-        <!-- EXPENSES SECTION -->
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full text-sm">🏷️ Expenses / Commitments</h2>
@@ -132,7 +123,6 @@ button:active, .clickable:active {
         </section>
     </main>
 
-    <!-- TAB 2: 12-MONTH PROJECTION -->
     <main id="tab-projection" class="tab-content space-y-6">
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <h2 class="font-bold text-gray-800 text-lg mb-2">12-Month Forecast</h2>
@@ -151,14 +141,12 @@ button:active, .clickable:active {
                         </tr>
                     </thead>
                     <tbody id="projection-table-body" class="divide-y divide-gray-50">
-                        <!-- Dynamic Month Rows -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </section>
     </main>
 
-    <!-- TAB 3: COMMITMENTS BREAKDOWN -->
     <main id="tab-commitments" class="tab-content space-y-6">
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <div class="flex justify-between items-center mb-6">
@@ -173,12 +161,10 @@ button:active, .clickable:active {
             </div>
 
             <div id="commitments-breakdown-list" class="space-y-3">
-                <!-- Calculated details dynamically load here -->
-            </div>
+                </div>
         </section>
     </main>
 
-    <!-- APPLICATION LOGIC CODE -->
     <script>
         // Data Structure
         let budgetData = {
@@ -451,9 +437,81 @@ button:active, .clickable:active {
                 }
             });
         }
+
+        // --- PULL-TO-WIPE GESTURE LOGIC FOR SYSTEM STORAGE RESET ---
+        let touchStartKeyY = 0;
+        let totalPullDistance = 0;
+        const PULL_MAX_THRESHOLD = 75; // Distance in pixels required to trigger the wipe confirmation
+        let isPullingActive = false;
+
+        const pullIndicator = document.getElementById('pull-indicator-container');
+        const pullCircle = document.getElementById('pull-circle');
+        const pullIcon = document.getElementById('pull-icon');
+
+        window.addEventListener('touchstart', (e) => {
+            // Only allow pulling if the user is at the absolute top of the screen scroll
+            if (window.scrollY === 0) {
+                touchStartKeyY = e.touches[0].clientY;
+                isPullingActive = true;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isPullingActive) return;
+
+            const currentY = e.touches[0].clientY;
+            const currentPull = currentY - touchStartKeyY;
+
+            if (currentPull > 0) {
+                // Apply resistance physics so pulling harder feels weighted like an iPhone utility menu
+                totalPullDistance = Math.pow(currentPull, 0.85);
+
+                // Move the indicator container into view based on drag distance
+                pullIndicator.style.transform = `translateY(${Math.min(totalPullDistance, PULL_MAX_THRESHOLD + 20)}px)`;
+                
+                // Spin and scale the circle dynamic properties based on depth pulled
+                const rotationAngle = (totalPullDistance / PULL_MAX_THRESHOLD) * 360;
+                const scaleDepth = Math.min(0.5 + (totalPullDistance / PULL_MAX_THRESHOLD) * 0.5, 1.2);
+                
+                pullCircle.style.transform = `scale(${scaleDepth})`;
+                pullIcon.style.transform = `rotate(${rotationAngle}deg)`;
+
+                // Visual alert flag: change color when user pulls deep enough to trigger reset
+                if (totalPullDistance >= PULL_MAX_THRESHOLD) {
+                    pullCircle.className = "bg-red-500 border border-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md transform transition-transform duration-100";
+                } else {
+                    pullCircle.className = "bg-red-100 border border-red-200 text-red-600 rounded-full w-12 h-12 flex items-center justify-center shadow-md transform transition-transform duration-100";
+                }
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            if (!isPullingActive) return;
+            isPullingActive = false;
+
+            // Trigger action parameters if requirements met
+            if (totalPullDistance >= PULL_MAX_THRESHOLD) {
+                // Mobile Haptic Impact (supported on modern browsers/home screen shortcuts)
+                if (navigator.vibrate) navigator.vibrate(15);
+                
+                // Trigger our original clear logic sequence safely
+                setTimeout(() => {
+                    clearAll();
+                }, 10);
+            }
+
+            // Snap back animation routine
+            pullIndicator.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.5)";
+            pullIndicator.style.transform = `translateY(-60px)`;
+            
+            setTimeout(() => {
+                pullIndicator.style.transition = "transform duration-150";
+                pullCircle.className = "bg-red-100 border border-red-200 text-red-600 rounded-full w-12 h-12 flex items-center justify-center shadow-md transform transition-transform duration-100";
+                totalPullDistance = 0;
+            }, 300);
+        });
     </script>
     
-    <!-- Register local service worker asset routing hook -->
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error", err));
