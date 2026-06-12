@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PoketKu - Monthly Budget Planner</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -250,11 +250,11 @@
                 div.className = "flex items-center gap-2 bg-gray-50/70 p-2 rounded-2xl border border-gray-100 transition-all duration-200 hover:bg-gray-50";
                 div.innerHTML = `
                     <input type="text" value="${item.name}" oninput="updateItemName('${type}', '${item.id}', this.value)" 
-                        class="flex-1 bg-transparent px-2 py-1 text-base font-medium text-gray-700 focus:outline-none focus:bg-white focus:rounded-lg" placeholder="Name...">
+                        class="flex-1 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 focus:outline-none focus:bg-white focus:rounded-lg" placeholder="Name...">
                     <div class="flex items-center gap-1 bg-white px-3 py-1 rounded-xl shadow-2xs border border-gray-100">
                         <span class="text-xs font-bold text-gray-400">RM</span>
                         <input type="number" inputmode="decimal" value="${item.amount || ''}" oninput="updateItemAmount('${type}', '${item.id}', this.value)" 
-                            class="w-20 bg-transparent text-base font-bold text-gray-800 text-right focus:outline-none" placeholder="0">
+                            class="w-16 bg-transparent text-sm font-bold text-gray-800 text-right focus:outline-none" placeholder="0">
                     </div>
                     <button onclick="removeItem('${type}', '${item.id}')" class="text-gray-300 hover:text-red-400 text-xs px-2 transition-colors">✕</button>
                 `;
@@ -335,7 +335,7 @@
                         <input type="number" step="any" value="${budgetData.adjustments[idx] || ''}" 
                             oninput="updateAdjustment(${idx}, this.value)"
                             placeholder="0"
-                            class="w-24 bg-white border border-gray-200 px-2 py-1 rounded-xl text-right text-base font-semibold text-gray-700 focus:outline-none focus:border-indigo-300">
+                            class="w-24 bg-white border border-gray-200 px-2 py-1 rounded-xl text-right text-sm font-semibold text-gray-700 focus:outline-none focus:border-indigo-300">
                     </td>
                 `;
                 tbody.appendChild(tr);
