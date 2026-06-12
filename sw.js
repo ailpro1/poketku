@@ -1,8 +1,8 @@
-const CACHE_NAME = 'poketku-v1.3';
+const CACHE_NAME = 'poketku-v1.4';
 const ASSETS = [
   'index.html',
   'manifest.json',
-  'image.png'
+  'image.PNG'
 ];
 
 self.addEventListener('install', (e) => {
