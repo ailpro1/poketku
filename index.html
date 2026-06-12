@@ -37,7 +37,7 @@
             background-color: var(--bg-pastel);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             transition: background-color 0.5s ease;
-            padding-top: 195px; /* Adds space so scrolling content doesn't start hidden under the floating card */
+            padding-top: 220px; /* Moved down slightly more so content doesn't stack under the floating card */
         }
 
         /* FIX: Make the Balance card float/sticky at the top */
@@ -47,7 +47,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 2rem); /* Matches original layout padding margins */
-            max-w: 416px; /* Keeps it perfectly aligned with max-w-md layout */
+            max-width: 416px; /* Keeps it perfectly aligned with max-w-md layout */
             z-index: 50;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
             margin-top: 1rem;
@@ -121,6 +121,10 @@
             </div>
             <div id="expense-list" class="space-y-3"></div>
         </section>
+
+        <div class="text-center pt-2">
+            <p class="text-[10px] tracking-wide text-gray-400 font-medium">💡 Pull down from the top to reset your budget planning</p>
+        </div>
     </main>
 
     <main id="tab-projection" class="tab-content space-y-6">
