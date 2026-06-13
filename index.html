@@ -103,10 +103,11 @@
         </div>
         <p class="text-xs text-gray-500 font-medium mt-1">...left to spend or save</p>
 
-        <div class="flex bg-white/60 backdrop-blur-md p-1 rounded-full mt-6 gap-1 text-xs font-semibold shadow-inner">
-            <button onclick="switchTab('plan')" id="btn-plan" class="flex-1 py-2.5 rounded-full bg-white shadow-sm text-gray-800">Plan</button>
-            <button onclick="switchTab('projection')" id="btn-projection" class="flex-1 py-2.5 rounded-full text-gray-500">12-Month Forecast</button>
-            <button onclick="switchTab('commitments')" id="btn-commitments" class="flex-1 py-2.5 rounded-full text-gray-500">Commitments</button>
+        <div class="flex bg-white/60 backdrop-blur-md p-1 rounded-full mt-6 gap-1 text-xs font-semibold shadow-inner overflow-x-auto">
+            <button onclick="switchTab('plan')" id="btn-plan" class="flex-1 py-2.5 rounded-full bg-white shadow-sm text-gray-800 whitespace-nowrap">Plan</button>
+            <button onclick="switchTab('checklist')" id="btn-checklist" class="flex-1 py-2.5 rounded-full text-gray-500 whitespace-nowrap">Checklist</button>
+            <button onclick="switchTab('projection')" id="btn-projection" class="flex-1 py-2.5 rounded-full text-gray-500 whitespace-nowrap">Forecast</button>
+            <button onclick="switchTab('commitments')" id="btn-commitments" class="flex-1 py-2.5 rounded-full text-gray-500 whitespace-nowrap">Commitments</button>
         </div>
     </header>
 
@@ -117,6 +118,14 @@
                 <button onclick="addItem('income')" class="text-emerald-600 bg-emerald-50 hover:bg-emerald-100 w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center">+</button>
             </div>
             <div id="income-list" class="space-y-3"></div>
+        </section>
+
+        <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full text-sm">🛡️ Savings Target</h2>
+                <button onclick="addItem('savings')" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center">+</button>
+            </div>
+            <div id="savings-list" class="space-y-3"></div>
         </section>
 
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
@@ -132,10 +141,27 @@
         </div>
     </main>
 
+    <main id="tab-checklist" class="tab-content space-y-6">
+        <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h2 class="font-bold text-gray-800 text-lg">Monthly Tracker</h2>
+                    <p id="checklist-progress" class="text-xs text-gray-400 font-semibold mt-0.5">Paid: 0 / 0 (RM 0.00)</p>
+                </div>
+                <button onclick="resetChecklist()" class="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors">
+                    🔄 Reset Slate
+                </button>
+            </div>
+            
+            <div id="checklist-container" class="space-y-2 pt-2">
+                </div>
+        </section>
+    </main>
+
     <main id="tab-projection" class="tab-content space-y-6">
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <h2 class="font-bold text-gray-800 text-lg mb-1">12-Month Forecast</h2>
-            <p class="text-xs text-gray-400 mb-4">Baseline values mirror your current month. Tailor one-off spikes directly below.</p>
+            <p class="text-xs text-gray-400 mb-4">Baseline values mirror your current month settings. Tailor one-off spikes directly below.</p>
             
             <div class="mb-4">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Simulate Scenarios</p>
@@ -190,12 +216,13 @@
         // Data Structure
         let budgetData = {
             income: [{ id: "i1", name: "Salary Base", amount: 5000 }],
+            savings: [{ id: "s1", name: "Emergency Fund", amount: 500 }],
             expense: [
                 { id: "e1", name: "Rent / Housing", amount: 1200 },
                 { id: "e2", name: "Car Loan", amount: 600 }
             ],
-            // 12-month delta variables to account for custom one-off variations
-            adjustments: Array(12).fill(0) 
+            adjustments: Array(12).fill(0),
+            checkedCommitments: {} // Tracks user crosschecks indexed by commitment id strings
         };
 
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -203,11 +230,9 @@
         let lineChart = null;
         let pieChart = null;
 
-        // Track temporary decimal typing states so re-rendering doesn't destroy trailing dots
         let activeInputId = null;
         let activeInputStringValue = "";
 
-        // Active simulator modifiers array trackers
         let simulations = {
             dining: false,
             bonus: false,
@@ -231,7 +256,10 @@
             if (saved) {
                 try { 
                     budgetData = JSON.parse(saved); 
+                    if(!budgetData.savings) budgetData.savings = [];
+                    if(!budgetData.checkedCommitments) budgetData.checkedCommitments = {};
                     budgetData.income.sort((a, b) => b.amount - a.amount);
+                    budgetData.savings.sort((a, b) => b.amount - a.amount);
                     budgetData.expense.sort((a, b) => b.amount - a.amount);
                 } catch(e) { console.error(e); }
             }
@@ -239,7 +267,7 @@
 
         function clearAll() {
             if(confirm("Wipe everything out to start fresh?")) {
-                budgetData = { income: [], expense: [], adjustments: Array(12).fill(0) };
+                budgetData = { income: [], savings: [], expense: [], adjustments: Array(12).fill(0), checkedCommitments: {} };
                 saveData();
                 renderPlanner();
                 calculateBudget();
@@ -253,16 +281,19 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
             
-            const buttons = { plan: 'btn-plan', projection: 'btn-projection', commitments: 'btn-commitments' };
+            const buttons = { plan: 'btn-plan', checklist: 'btn-checklist', projection: 'btn-projection', commitments: 'btn-commitments' };
             Object.keys(buttons).forEach(key => {
                 const btn = document.getElementById(buttons[key]);
-                if(key === tabName) {
-                    btn.className = "flex-1 py-2.5 rounded-full bg-white shadow-sm text-gray-800 font-semibold";
-                } else {
-                    btn.className = "flex-1 py-2.5 rounded-full text-gray-400 font-medium";
+                if(btn) {
+                    if(key === tabName) {
+                        btn.className = "flex-1 py-2.5 rounded-full bg-white shadow-sm text-gray-800 font-semibold whitespace-nowrap";
+                    } else {
+                        btn.className = "flex-1 py-2.5 rounded-full text-gray-400 font-medium whitespace-nowrap";
+                    }
                 }
             });
 
+            if (tabName === 'checklist') renderChecklist();
             if (tabName === 'projection') renderProjectionCharts();
             if (tabName === 'commitments') renderCommitmentViews();
         }
@@ -270,6 +301,7 @@
         // Dynamic Field Builder
         function renderPlanner() {
             renderList('income', 'income-list');
+            renderList('savings', 'savings-list');
             renderList('expense', 'expense-list');
         }
 
@@ -327,6 +359,67 @@
             }
         }
 
+        function removeItem(type, id) {
+            budgetData[type] = budgetData[type].filter(i => i.id !== id);
+            delete budgetData.checkedCommitments[id];
+            saveData();
+            renderPlanner();
+            calculateBudget();
+        }
+
+        // Live Checkable List Renderer
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = '';
+            
+            if (budgetData.expense.length === 0) {
+                container.innerHTML = `<p class="text-center text-xs text-gray-400 py-8">No commitments listed in your budget plan tab.</p>`;
+                document.getElementById('checklist-progress').innerText = "Paid: 0 / 0 (RM 0.00)";
+                return;
+            }
+
+            let paidCount = 0;
+            let totalPaidAmount = 0;
+            const totalExpenseSum = budgetData.expense.reduce((sum, i) => sum + i.amount, 0);
+
+            budgetData.expense.forEach(item => {
+                const isChecked = !!budgetData.checkedCommitments[item.id];
+                if(isChecked) {
+                    paidCount++;
+                    totalPaidAmount += item.amount;
+                }
+
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 clickable ${isChecked ? 'bg-emerald-50/60 border-emerald-100 text-gray-400 line-through' : 'bg-white border-gray-100 text-gray-700'}`;
+                div.onclick = () => toggleChecklistItem(item.id);
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs select-none transition-all ${isChecked ? 'border-emerald-500 bg-emerald-500 text-white font-bold' : 'border-gray-300'}" style="font-size:10px;">
+                            ${isChecked ? '✓' : ''}
+                        </div>
+                        <span class="text-sm font-semibold">${item.name || 'Unnamed Item'}</span>
+                    </div>
+                    <span class="text-sm font-bold ${isChecked ? 'text-emerald-600' : 'text-gray-900'}">RM ${item.amount.toFixed(2)}</span>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('checklist-progress').innerText = `Paid: ${paidCount} / ${budgetData.expense.length} (RM ${totalPaidAmount.toLocaleString('en-MY', {minimumFractionDigits:2})} / RM ${totalExpenseSum.toLocaleString('en-MY', {minimumFractionDigits:2})})`;
+        }
+
+        function toggleChecklistItem(id) {
+            budgetData.checkedCommitments[id] = !budgetData.checkedCommitments[id];
+            saveData();
+            renderChecklist();
+        }
+
+        function resetChecklist() {
+            budgetData.checkedCommitments = {};
+            saveData();
+            renderChecklist();
+        }
+
         // What-If Toggles Engine Block
         function toggleSimulation(type) {
             simulations[type] = !simulations[type];
@@ -340,18 +433,14 @@
             renderProjectionCharts();
         }
 
-        function removeItem(type, id) {
-            budgetData[type] = budgetData[type].filter(i => i.id !== id);
-            saveData();
-            renderPlanner();
-            calculateBudget();
-        }
-
         // Live Math Calculations & Dynamic Feedback Styling
         function calculateBudget() {
             const totalIncome = budgetData.income.reduce((sum, i) => sum + i.amount, 0);
+            const totalSavings = budgetData.savings ? budgetData.savings.reduce((sum, i) => sum + i.amount, 0) : 0;
             const totalExpense = budgetData.expense.reduce((sum, i) => sum + i.amount, 0);
-            const balance = totalIncome - totalExpense;
+            
+            // Balance is remaining pure surplus left over after expenses AND planned savings goals
+            const balance = totalIncome - totalExpense - totalSavings;
 
             const displayEl = document.getElementById('balance-amount');
             const cardEl = document.getElementById('indicator-card');
@@ -403,29 +492,34 @@
 
         function renderProjectionCharts() {
             const totalIncome = budgetData.income.reduce((sum, i) => sum + i.amount, 0);
+            const totalSavingsBaseline = budgetData.savings ? budgetData.savings.reduce((sum, i) => sum + i.amount, 0) : 0;
             const totalExpense = budgetData.expense.reduce((sum, i) => sum + i.amount, 0);
-            const baselineBalance = totalIncome - totalExpense;
+            
+            const baselineSurplus = totalIncome - totalExpense - totalSavingsBaseline;
 
-            // Generate monthly values matching adjustments array indexes with applied simulation overlays
-            const monthlyBalances = months.map((_, idx) => {
-                let amt = baselineBalance + budgetData.adjustments[idx];
+            // Compute monthly values mapped out along dynamic simulation curves
+            const monthlySurpluses = months.map((_, idx) => {
+                let amt = baselineSurplus + budgetData.adjustments[idx];
                 
-                if (simulations.dining) amt += 200; // Adds RM200 savings across all months
-                if (simulations.bonus && idx === 2) amt += totalIncome; // March salary payload injection double point
-                if (simulations.inflation) amt -= (totalExpense * 0.05); // Global 5% burn profile factor
+                if (simulations.dining) amt += 200; 
+                if (simulations.bonus && idx === 2) amt += totalIncome; 
+                if (simulations.inflation) amt -= (totalExpense * 0.05); 
 
                 return amt;
             });
 
-            // Calculate Cumulative Savings Stack Array Trend values
-            let trackerPool = 0;
-            const cumulativeSavings = monthlyBalances.map(monthlySurplus => {
-                trackerPool += monthlySurplus;
-                return trackerPool;
+            // Calculate compounding cumulative active savings line assets
+            let totalSavedTracker = 0;
+            const cumulativeSavingsLine = months.map((_, idx) => {
+                let currentMonthSavings = totalSavingsBaseline;
+                
+                // If a user goes into negative surplus, their core baseline savings absorbs the overflow drop
+                let operationalSurplus = monthlySurpluses[idx];
+                totalSavedTracker += currentMonthSavings + operationalSurplus;
+                return totalSavedTracker;
             });
 
-            // Update Automated Insight Generation Text Blocks
-            generateSmartInsights(monthlyBalances, trackerPool);
+            generateSmartInsights(monthlySurpluses, totalSavedTracker);
 
             if (lineChart) lineChart.destroy();
 
@@ -437,8 +531,8 @@
                     datasets: [
                         {
                             type: 'line',
-                            label: 'Cumulative Stack (MYR)',
-                            data: cumulativeSavings,
+                            label: 'Total Saved Stack (MYR)',
+                            data: cumulativeSavingsLine,
                             borderColor: '#4f46e5',
                             borderWidth: 2.5,
                             pointBackgroundColor: '#4f46e5',
@@ -448,10 +542,10 @@
                         },
                         {
                             type: 'bar',
-                            label: 'Monthly Net Surplus (MYR)',
-                            data: monthlyBalances,
-                            backgroundColor: monthlyBalances.map(v => v >= 0 ? '#c2e7d9' : '#fbc4be'),
-                            borderColor: monthlyBalances.map(v => v >= 0 ? '#34a853' : '#ea4335'),
+                            label: 'Net Balance (MYR)',
+                            data: monthlySurpluses,
+                            backgroundColor: monthlySurpluses.map(v => v >= 0 ? '#c2e7d9' : '#fbc4be'),
+                            borderColor: monthlySurpluses.map(v => v >= 0 ? '#34a853' : '#ea4335'),
                             borderWidth: 1,
                             borderRadius: 6,
                             yAxisID: 'yMonthly'
@@ -483,26 +577,23 @@
         }
 
         // Dynamic Automated Financial Weather Insights Engine Module
-        function generateSmartInsights(monthlyBalances, totalPool) {
+        function generateSmartInsights(monthlySurpluses, totalPool) {
             const container = document.getElementById('insights-container');
             container.innerHTML = '';
 
-            const negativeMonthsCount = monthlyBalances.filter(v => v < 0).length;
+            const negativeMonthsCount = monthlySurpluses.filter(v => v < 0).length;
+            let html = `<div class="flex items-center gap-1.5 text-slate-800 font-bold mb-1">✨ Year-End Savings Outlook</div>`;
             
-            let html = `<div class="flex items-center gap-1.5 text-slate-800 font-bold mb-1">✨ Year-End Outlook</div>`;
-            
-            // Insight Row 1: Cumulative Performance
             if(totalPool >= 0) {
-                html += `<div>🟢 On track to stack a cumulative surplus of <span class="font-bold text-emerald-700">RM ${totalPool.toLocaleString('en-MY', {minimumFractionDigits: 2})}</span> by December.</div>`;
+                html += `<div>🟢 Your dedicated savings asset ledger will pool up to <span class="font-bold text-emerald-700">RM ${totalPool.toLocaleString('en-MY', {minimumFractionDigits: 2})}</span> by December.</div>`;
             } else {
-                html += `<div>🔴 Warning: Deficit forecast alert. Estimated net capital trajectory sits at <span class="font-bold text-red-600">RM ${totalPool.toLocaleString('en-MY', {minimumFractionDigits: 2})}</span>.</div>`;
+                html += `<div>🔴 Warning: Deficit patterns threaten reserve pools. Projected net value ends at <span class="font-bold text-red-600">RM ${totalPool.toLocaleString('en-MY', {minimumFractionDigits: 2})}</span>.</div>`;
             }
 
-            // Insight Row 2: Consistency Checks
             if(negativeMonthsCount > 0) {
-                html += `<div>⚠️ You have <span class="font-bold text-amber-700">${negativeMonthsCount} deficit periods</span>. Review your input rows or one-off modifications to cushion low-cash gaps.</div>`;
+                html += `<div>⚠️ You have <span class="font-bold text-amber-700">${negativeMonthsCount} tight cash flow cycles</span> where expenses outpaced incoming funds. Planned targets will dip during these windows.</div>`;
             } else {
-                html += `<div>🎉 Exceptional buffer control! Zero drop months detected. Your baseline safely keeps savings running clean all year.</div>`;
+                html += `<div>🎉 Superb liquidity maintenance! Core capital targets are perfectly balanced and running completely clean.</div>`;
             }
 
             container.innerHTML = html;
@@ -526,7 +617,6 @@
                 return;
             }
 
-            // Render text rows
             budgetData.expense.forEach(item => {
                 const percent = totalExpense > 0 ? ((item.amount / totalExpense) * 100).toFixed(1) : 0;
                 const displayValue = viewPercentage ? `${percent}%` : `RM ${item.amount.toFixed(2)}`;
@@ -540,11 +630,8 @@
                 listContainer.appendChild(div);
             });
 
-            // Rebuild Chart Graphics
             if (pieChart) pieChart.destroy();
             const ctx = document.getElementById('commitmentsPieChart').getContext('2d');
-            
-            // Soft pastel generated palettes
             const pastelColors = ['#d1e7dd', '#fff3cd', '#cff4fc', '#f8d7da', '#e2e3e5', '#e0cffc', '#fdd3e8'];
 
             pieChart = new Chart(ctx, {
@@ -568,7 +655,7 @@
         // --- PULL-TO-WIPE GESTURE LOGIC FOR SYSTEM STORAGE RESET ---
         let touchStartKeyY = 0;
         let totalPullDistance = 0;
-        const PULL_MAX_THRESHOLD = 75; // Distance in pixels required to trigger the wipe confirmation
+        const PULL_MAX_THRESHOLD = 75; 
         let isPullingActive = false;
 
         const pullIndicator = document.getElementById('pull-indicator-container');
