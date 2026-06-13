@@ -341,10 +341,7 @@
             const item = budgetData[type].find(i => i.id === id);
             if(item) {
                 item.name = val;
-                saveData();
-                renderPlanner();
-                const inputField = document.getElementById(`name-${id}`);
-                if (inputField) inputField.focus();
+                saveData(); // Saves silently in the background without forcing a layout re-render
             }
         }
 
@@ -378,12 +375,15 @@
                 return;
             }
 
-            let paidCount = 0;
-            let totalPaidAmount = 0;
-            const totalExpenseSum = budgetData.expense.reduce((sum, i) => sum + i.amount, 0);
-
-            budgetData.expense.forEach(item => {
-                const isChecked = !!budgetData.checkedCommitments[item.id];
+                        let paidCount = 0;
+                        let totalPaidAmount = 0;
+                        
+                        // Combine both pools so savings items can be checked off too
+                        const combinedList = [...budgetData.expense, ...(budgetData.savings || [])];
+                        const totalExpenseSum = combinedList.reduce((sum, i) => sum + i.amount, 0);
+            
+                        combinedList.forEach(item => {
+                            const isChecked = !!budgetData.checkedCommitments[item.id];
                 if(isChecked) {
                     paidCount++;
                     totalPaidAmount += item.amount;
@@ -405,7 +405,7 @@
                 container.appendChild(div);
             });
 
-            document.getElementById('checklist-progress').innerText = `Paid: ${paidCount} / ${budgetData.expense.length} (RM ${totalPaidAmount.toLocaleString('en-MY', {minimumFractionDigits:2})} / RM ${totalExpenseSum.toLocaleString('en-MY', {minimumFractionDigits:2})})`;
+            document.getElementById('checklist-progress').innerText = `Paid: ${paidCount} / ${combinedList.length} (RM ${totalPaidAmount.toLocaleString('en-MY', {minimumFractionDigits:2})} / RM ${totalExpenseSum.toLocaleString('en-MY', {minimumFractionDigits:2})})`;
         }
 
         function toggleChecklistItem(id) {
