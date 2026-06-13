@@ -161,7 +161,27 @@
     <main id="tab-projection" class="tab-content space-y-6">
         <section class="bg-white rounded-3xl p-5 shadow-xs border border-gray-100">
             <h2 class="font-bold text-gray-800 text-lg mb-1">12-Month Forecast</h2>
-            <p class="text-xs text-gray-400 mb-4">Baseline values mirror your current month settings. Tailor one-off spikes directly below.</p>
+            <p class="text-xs text-gray-400 mb-3">Baseline values mirror your current month settings.</p>
+            
+            <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4 text-xs font-semibold text-gray-600">
+                <div class="col-span-2 flex flex-col gap-1">
+                    <label>Start Planning From:</label>
+                    <select id="setup-start-month" onchange="updateSetupParam('startMonthIdx', this.value)" class="bg-white border border-gray-200 p-1.5 rounded-xl text-xs focus:outline-none">
+                        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+                        <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+                        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+                        <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1 mt-1">
+                    <label>Starting Savings (RM)</label>
+                    <input type="number" id="setup-init-savings" placeholder="0" onchange="updateSetupParam('initialSavingsBal', this.value)" class="bg-white border border-gray-200 p-1.5 rounded-xl text-xs text-right focus:outline-none">
+                </div>
+                <div class="flex flex-col gap-1 mt-1">
+                    <label>Starting Buffer (RM)</label>
+                    <input type="number" id="setup-init-spending" placeholder="0" onchange="updateSetupParam('initialSpendingBal', this.value)" class="bg-white border border-gray-200 p-1.5 rounded-xl text-xs text-right focus:outline-none">
+                </div>
+            </div>
             
             <div class="mb-4">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Simulate Scenarios</p>
@@ -222,9 +242,11 @@
                 { id: "e2", name: "Car Loan", amount: 600 }
             ],
             adjustments: Array(12).fill(0),
-            checkedCommitments: {} // Tracks user crosschecks indexed by commitment id strings
+            checkedCommitments: {},
+            startMonthIdx: 0,            // 0 = Jan, 1 = Feb, 2 = Mar, etc.
+            initialSavingsBal: 0,
+            initialSpendingBal: 0
         };
-
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         let viewPercentage = false;
         let lineChart = null;
@@ -258,6 +280,9 @@
                     budgetData = JSON.parse(saved); 
                     if(!budgetData.savings) budgetData.savings = [];
                     if(!budgetData.checkedCommitments) budgetData.checkedCommitments = {};
+                    if(budgetData.startMonthIdx === undefined) budgetData.startMonthIdx = 0;
+                    if(budgetData.initialSavingsBal === undefined) budgetData.initialSavingsBal = 0;
+                    if(budgetData.initialSpendingBal === undefined) budgetData.initialSpendingBal = 0;
                     budgetData.income.sort((a, b) => b.amount - a.amount);
                     budgetData.savings.sort((a, b) => b.amount - a.amount);
                     budgetData.expense.sort((a, b) => b.amount - a.amount);
@@ -464,11 +489,28 @@
             displayEl.classList.add('animate-impact');
         }
 
+        // Setup Parameters Update Utility Link Sync Hook
+        function updateSetupParam(field, value) {
+            budgetData[field] = parseFloat(value) || 0;
+            saveData();
+            renderProjectionCharts();
+            buildProjectionTable();
+        }
+
         // TAB 2: Annual Dynamic Projection Builders
         function buildProjectionTable() {
+            // Update UI inputs to display stored parameters accurately
+            document.getElementById('setup-start-month').value = budgetData.startMonthIdx;
+            document.getElementById('setup-init-savings').value = budgetData.initialSavingsBal || '';
+            document.getElementById('setup-init-spending').value = budgetData.initialSpendingBal || '';
+
             const tbody = document.getElementById('projection-table-body');
             tbody.innerHTML = '';
+            
             months.forEach((month, idx) => {
+                // If this month falls before our selected starting point, hide its row completely
+                if (idx < budgetData.startMonthIdx) return;
+
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50/50 transition-colors";
                 tr.innerHTML = `
@@ -499,8 +541,10 @@
 
             // Compute monthly values mapped out along dynamic simulation curves
             const monthlySurpluses = months.map((_, idx) => {
+                // Return null or 0 for bypassed historical tracking points
+                if (idx < budgetData.startMonthIdx) return 0;
+
                 let amt = baselineSurplus + budgetData.adjustments[idx];
-                
                 if (simulations.dining) amt += 200; 
                 if (simulations.bonus && idx === 2) amt += totalIncome; 
                 if (simulations.inflation) amt -= (totalExpense * 0.05); 
@@ -508,16 +552,18 @@
                 return amt;
             });
 
-                        // 1. Calculate compounding dedicated savings stack
-            let totalSavedTracker = 0;
-            const cumulativeSavingsLine = months.map(() => {
+            // 1. Calculate compounding dedicated savings stack factoring in day-one baseline
+            let totalSavedTracker = budgetData.initialSavingsBal;
+            const cumulativeSavingsLine = months.map((_, idx) => {
+                if (idx < budgetData.startMonthIdx) return null;
                 totalSavedTracker += totalSavingsBaseline;
                 return totalSavedTracker;
             });
 
-            // 2. Calculate rolling spending buffer (Last Month Buffer + Current Month Net Surplus)
-            let rollingBufferTracker = 0;
-            const cumulativeBufferLine = monthlySurpluses.map(monthlySurplus => {
+            // 2. Calculate rolling spending buffer factoring in day-one baseline
+            let rollingBufferTracker = budgetData.initialSpendingBal;
+            const cumulativeBufferLine = monthlySurpluses.map((monthlySurplus, idx) => {
+                if (idx < budgetData.startMonthIdx) return null;
                 rollingBufferTracker += monthlySurplus;
                 return rollingBufferTracker;
             });
