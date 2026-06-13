@@ -206,9 +206,15 @@
         function loadData() {
             const saved = localStorage.getItem('poketku_data_2026');
             if (saved) {
-                try { budgetData = JSON.parse(saved); } catch(e) { console.error(e); }
+                try { 
+                    budgetData = JSON.parse(saved); 
+                    // Sort arrays immediately upon loading saved storage profile datasets
+                    budgetData.income.sort((a, b) => b.amount - a.amount);
+                    budgetData.expense.sort((a, b) => b.amount - a.amount);
+                } catch(e) { console.error(e); }
             }
         }
+
 
         function clearAll() {
             if(confirm("Wipe everything out to start fresh?")) {
@@ -269,7 +275,8 @@
 
         function addItem(type) {
             const id = type[0] + Date.now();
-            budgetData[type].push({ id: id, name: type === 'income' ? 'Other Income' : 'Commitment Item', amount: 0 });
+            // Default name is now empty ("") so users don't have to delete placeholder text
+            budgetData[type].push({ id: id, name: "", amount: 0 });
             saveData();
             renderPlanner();
             calculateBudget();
@@ -287,8 +294,14 @@
             const item = budgetData[type].find(i => i.id === id);
             if(item) {
                 item.amount = parseFloat(val) || 0;
+                budgetData[type].sort((a, b) => b.amount - a.amount);
                 saveData();
                 calculateBudget();
+                
+                // Keeps focus and updates layout order on the fly
+                const activeElementId = document.activeElement.id;
+                renderPlanner();
+                if (activeElementId) document.getElementById(activeElementId)?.focus();
             }
         }
 
