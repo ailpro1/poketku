@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poketku-v1.7';
+const CACHE_NAME = 'poketku-v1.6.5';
 const ASSETS = [
   'index.html',
   'manifest.json',
