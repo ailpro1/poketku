@@ -508,18 +508,22 @@
                 return amt;
             });
 
-            // Calculate compounding cumulative active savings line assets
+                        // 1. Calculate compounding dedicated savings stack
             let totalSavedTracker = 0;
-            const cumulativeSavingsLine = months.map((_, idx) => {
-                let currentMonthSavings = totalSavingsBaseline;
-                
-                // If a user goes into negative surplus, their core baseline savings absorbs the overflow drop
-                let operationalSurplus = monthlySurpluses[idx];
-                totalSavedTracker += currentMonthSavings + operationalSurplus;
+            const cumulativeSavingsLine = months.map(() => {
+                totalSavedTracker += totalSavingsBaseline;
                 return totalSavedTracker;
             });
 
-            generateSmartInsights(monthlySurpluses, totalSavedTracker);
+            // 2. Calculate rolling spending buffer (Last Month Buffer + Current Month Net Surplus)
+            let rollingBufferTracker = 0;
+            const cumulativeBufferLine = monthlySurpluses.map(monthlySurplus => {
+                rollingBufferTracker += monthlySurplus;
+                return rollingBufferTracker;
+            });
+
+            // Pass the total combined liquidity outlook to your insights card
+            generateSmartInsights(monthlySurpluses, totalSavedTracker + rollingBufferTracker);
 
             if (lineChart) lineChart.destroy();
 
@@ -531,11 +535,22 @@
                     datasets: [
                         {
                             type: 'line',
-                            label: 'Total Saved Stack (MYR)',
+                            label: 'Savings Stack (MYR)',
                             data: cumulativeSavingsLine,
-                            borderColor: '#4f46e5',
-                            borderWidth: 2.5,
+                            borderColor: '#4f46e5', // Deep Indigo
+                            borderWidth: 2,
                             pointBackgroundColor: '#4f46e5',
+                            tension: 0.3,
+                            fill: false,
+                            yAxisID: 'yCumulative'
+                        },
+                        {
+                            type: 'line',
+                            label: 'Spending Buffer (MYR)',
+                            data: cumulativeBufferLine,
+                            borderColor: '#0284c7', // Sky Blue
+                            borderWidth: 2,
+                            pointBackgroundColor: '#0284c7',
                             tension: 0.3,
                             fill: false,
                             yAxisID: 'yCumulative'
@@ -555,7 +570,13 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { 
+                            display: true,
+                            position: 'top',
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        } 
+                    },
                     scales: {
                         yMonthly: {
                             type: 'linear',
