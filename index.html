@@ -622,11 +622,11 @@
             if (balance >= 0) {
                 cardEl.style.backgroundColor = isDarkMode ? '#112224' : 'var(--pos-pastel)';
                 displayEl.style.color = isDarkMode ? '#4ade80' : 'var(--pos-text)';
-                if (isDarkMode) cardEl.style.borderColor = '#1e3a34';
+                cardEl.style.borderColor = isDarkMode ? '#1e3a34' : ''; // Reset to default on light mode
             } else {
                 cardEl.style.backgroundColor = isDarkMode ? '#2e151b' : 'var(--neg-pastel)';
                 displayEl.style.color = isDarkMode ? '#f87171' : 'var(--neg-text)';
-                if (isDarkMode) cardEl.style.borderColor = '#4c1d24';
+                cardEl.style.borderColor = isDarkMode ? '#4c1d24' : ''; // Reset to default on light mode
             }
             triggerImpactAnimation();
         }
@@ -892,6 +892,7 @@
                 document.body.classList.remove('dark-mode');
                 localStorage.setItem('budget_theme_mode', 'light');
             }
+            calculateBudget(); // Instantly triggers recalculation to fix floating header card styles
         }
 
         // Global Currency Settings Synchronizer
