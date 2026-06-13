@@ -870,7 +870,14 @@
 
             if (pieChart) pieChart.destroy();
             const ctx = document.getElementById('commitmentsPieChart').getContext('2d');
-            const pastelColors = ['#d1e7dd', '#fff3cd', '#cff4fc', '#f8d7da', '#e2e3e5', '#e0cffc', '#fdd3e8'];
+            
+            // Detect if night mode is enabled to switch palettes smoothly
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            
+            // Night-optimized deep jewel shades vs. standard light-mode pastels
+            const sliceColors = isDarkMode 
+                ? ['#064e3b', '#1e1b4b', '#4c0519', '#134e5e', '#451a03', '#311042', '#1e293b'] 
+                : ['#d1e7dd', '#fff3cd', '#f8d7da', '#cff4fc', '#fffbeb', '#e0cffc', '#e2e3e5'];
 
             pieChart = new Chart(ctx, {
                 type: 'pie',
@@ -878,7 +885,9 @@
                     labels: budgetData.expense.map(i => i.name),
                     datasets: [{
                         data: budgetData.expense.map(i => i.amount),
-                        backgroundColor: pastelColors.slice(0, budgetData.expense.length)
+                        backgroundColor: sliceColors.slice(0, budgetData.expense.length),
+                        borderColor: isDarkMode ? '#161b26' : '#ffffff', // Blends borders into card backgrounds
+                        borderWidth: isDarkMode ? 1.5 : 1
                     }]
                 },
                 options: {
@@ -911,7 +920,11 @@
                 document.body.classList.remove('dark-mode');
                 localStorage.setItem('budget_theme_mode', 'light');
             }
-            calculateBudget(); // Instantly triggers recalculation to fix floating header card styles
+            calculateBudget(); 
+            // Re-render pie chart instantly if open in the background layer
+            if (document.getElementById('tab-commitments').classList.contains('active')) {
+                renderCommitmentViews();
+            }
         }
 
         // Global Currency Settings Synchronizer
