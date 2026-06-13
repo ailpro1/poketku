@@ -288,16 +288,8 @@
             if(item) {
                 item.name = val;
                 saveData();
-                
-                renderPlanner();
-                
-                const inputField = document.getElementById(`name-${id}`);
-                if (inputField) {
-                    inputField.focus();
-                }
             }
         }
-
 
         function updateItemAmount(type, id, val) {
             const item = budgetData[type].find(i => i.id === id);
