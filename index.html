@@ -264,7 +264,8 @@
                         class="flex-1 min-w-0 bg-transparent px-2 py-1 text-base font-medium text-gray-700 focus:outline-none focus:bg-white focus:rounded-lg" placeholder="Name...">
                     <div class="flex items-center gap-1 bg-white px-3 py-1 rounded-xl shadow-2xs border border-gray-100 flex-shrink-0">
                         <span class="text-xs font-bold text-gray-400">RM</span>
-                        <input type="number" id="amount-${item.id}" inputmode="decimal" value="${item.amount || ''}" oninput="updateItemAmount('${type}', '${item.id}', this.value)" 
+                        // Keeping it as a native number input, allowing any decimal scale, and sorting only when finished typing
+                        <input type="number" id="amount-${item.id}" step="any" inputmode="decimal" value="${item.amount || ''}" onchange="updateItemAmount('${type}', '${item.id}', this.value)" 
                             class="w-16 bg-transparent text-base font-bold text-gray-800 text-right focus:outline-none" placeholder="0">
                     </div>
                     <button onclick="removeItem('${type}', '${item.id}')" class="text-gray-300 hover:text-red-400 text-xs px-2 flex-shrink-0 transition-colors">✕</button>
@@ -295,21 +296,13 @@
             const item = budgetData[type].find(i => i.id === id);
             if(item) {
                 item.amount = parseFloat(val) || 0;
+                
+                // Sorts seamlessly from high to low when you finish typing/tap away
                 budgetData[type].sort((a, b) => b.amount - a.amount);
+                
                 saveData();
                 calculateBudget();
-                
-                // Re-render the planner list view
                 renderPlanner();
-                
-                // Track down the new location of the sorted input box and re-focus immediately
-                const inputField = document.getElementById(`amount-${id}`);
-                if (inputField) {
-                    inputField.focus();
-                    // Moves selection cursor to the very end of the text line so it flows naturally
-                    const length = inputField.value.length;
-                    inputField.setSelectionRange(length, length);
-                }
             }
         }
 
